@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>IG</title>
+<style>body{font:15px system-ui,"Noto Sans TC";margin:0}
+main{max-width:900px;margin:auto}article{border:1px solid #dbdbdb;margin:16px 0;padding:12px}
+.grid{display:flex;flex-wrap:wrap;gap:4px}
+.cell{display:flex;flex-direction:column;width:200px}
+.cell a{display:block}.cell img{width:200px;height:200px;display:block;background:#ccd}</style>
+<main role="main">
+<article><b>feed_user</b><p>今天的咖啡拉花失敗了，但還是很好喝。</p></article>
+<article><b>movie_fan</b><p>這部片的結局我真的要爆雷了，受不了。</p></article>
+<div class="grid" id="g"></div></main><script>
+const G=[["/p/aaa","海邊日落，天氣超好"],["/reel/bbb","完整劇透版影片解析"],["/p/ccc","手沖咖啡教學"]];
+G.forEach(g=>{const c=document.createElement('div');c.className='cell';c.setAttribute('style','display:flex;flex-direction:column');
+ c.innerHTML='<a href="'+g[0]+'"><img alt="'+g[1]+'"></a>';document.getElementById('g').appendChild(c);});
+</script>

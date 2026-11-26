@@ -34,6 +34,16 @@
 後續階段可再加入 Reddit、Dcard、PTT 等，只需在 `src/content/adapters.js`
 增加一組設定，比對與遮罩邏輯都不必改動。
 
+## 測試
+
+```bash
+npm install playwright
+node test/run.js
+```
+
+把擴充功能真的載進 Chromium，用自簽憑證把各社群網站的網域映射到本機的模擬頁，
+再對實際的 DOM 與套用後的樣式做斷言。詳見 [`test/README.md`](test/README.md)。
+
 ## 設計初衷
 朋友不想在看 Pornhub 時看到 GTA6 相關暴雷影片，天知道他用了什麼關鍵字在 Pornhub 上
 

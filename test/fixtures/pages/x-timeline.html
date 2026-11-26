@@ -1,0 +1,43 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>Mock X Timeline</title>
+<style>
+body{font:15px/1.5 system-ui,"Noto Sans TC",sans-serif;margin:0;background:#fff;color:#0f1419}
+main{max-width:600px;margin:0 auto;border-inline:1px solid #eff3f4}
+[data-testid="cellInnerDiv"]{border-bottom:1px solid #eff3f4}
+article{padding:14px 16px;display:flex;gap:12px}
+.av{width:40px;height:40px;border-radius:50%;background:#cfd9de;flex:0 0 40px}
+.body{flex:1;min-width:0}
+.name{font-weight:700}.name span{font-weight:400;color:#536471}
+.media{height:180px;border-radius:14px;margin-top:10px;background:linear-gradient(135deg,#5f7adb,#b86fd0)}
+.acts{display:flex;gap:40px;color:#536471;margin-top:10px;font-size:13px}
+h1{font-size:17px;padding:14px 16px;margin:0;border-bottom:1px solid #eff3f4}
+</style></head><body>
+<main role="main"><h1>首頁</h1><div id="feed"></div></main>
+<script>
+const TWEETS = [
+  ["陳小美","@meimei","昨天終於追完了，結局真的太扯，大家小心被雷到。",true],
+  ["阿宏","@hung_dev","週末爬山天氣超好，分享幾張照片。",true],
+  ["新聞快報","@news_tw","本次選舉開票結果出爐，投票率創新高。",false],
+  ["貓貓日常","@catcat","今天的貓又把杯子推下桌了。",true],
+  ["影評人 K","@kreview","這部片的 spoiler 我就不多說了，自己去看。",false]
+];
+function render(t, i){
+  const cell=document.createElement('div');cell.setAttribute('data-testid','cellInnerDiv');
+  const art=document.createElement('article');
+  art.setAttribute('data-testid','tweet');art.setAttribute('role','article');
+  art.innerHTML='<div class="av"></div><div class="body">'+
+    '<div class="name">'+t[0]+' <span>'+t[1]+' · '+(i+1)+'小時</span></div>'+
+    '<div class="text">'+t[2]+'</div>'+ (t[3]?'<div class="media"></div>':'')+
+    '<div class="acts"><span>回覆</span><span>轉推</span><span>喜歡</span></div></div>';
+  cell.appendChild(art);return cell;
+}
+const feed=document.getElementById('feed');
+TWEETS.slice(0,3).forEach((t,i)=>feed.appendChild(render(t,i)));
+// 模擬無限捲動：稍後才載入的貼文也必須被屏蔽
+setTimeout(()=>{TWEETS.slice(3).forEach((t,i)=>feed.appendChild(render(t,i+3)));},600);
+// 模擬文字延遲填入
+setTimeout(()=>{
+  const cell=render(["延遲載入","@late","",true],9);
+  feed.appendChild(cell);
+  setTimeout(()=>{cell.querySelector('.text').textContent='這則是後來才補上文字的劇透內容';},500);
+},1200);
+</script></body></html>

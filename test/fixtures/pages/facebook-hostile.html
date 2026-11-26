@@ -1,0 +1,23 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>Mock FB</title>
+<style>
+body{font:15px/1.6 system-ui,"Noto Sans TC";margin:0;background:#f0f2f5}
+#feed{max-width:560px;margin:0 auto;padding:16px 0}
+[data-pagelet]{background:#fff;margin-bottom:16px;border-radius:8px;overflow:hidden}
+[role=article]{padding:14px}
+video{width:100%;display:block;background:#000}
+/* ↓↓ 模擬 Facebook 讓子元素濾鏡失效：ID 選擇器特異性高於擴充功能的類別選擇器 ↓↓ */
+#feed > div > * { filter: none !important; }
+</style></head><body>
+<div id="feed"></div>
+<script>
+const P=[["即新聞","過去曾任北市警、還是第一位女性警備隊長的陳所長在臉書分享，這種跨4天、封閉主幹道的專案核准下來…",true],
+         ["旅遊誌","九份老街人超多，但很好拍。",false]];
+P.forEach((p,i)=>{
+  const w=document.createElement('div');w.setAttribute('data-pagelet','FeedUnit_'+i);
+  const a=document.createElement('div');a.setAttribute('role','article');a.setAttribute('aria-posinset',String(i+1));
+  a.innerHTML='<b>'+p[0]+'</b><p>'+p[1]+'</p>';
+  if(p[2]){const v=document.createElement('video');v.src='/clip.mp4';v.autoplay=true;v.loop=true;
+    v.muted=false;v.volume=1;v.id='vid';a.appendChild(v);}
+  w.appendChild(a);document.getElementById('feed').appendChild(w);
+});
+</script></body></html>

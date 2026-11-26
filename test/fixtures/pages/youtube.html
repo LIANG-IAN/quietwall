@@ -1,0 +1,68 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>Mock YouTube</title>
+<style>
+body{font:14px/1.5 Roboto,system-ui,"Noto Sans TC";margin:0;background:#0f0f0f;color:#f1f1f1}
+ytd-rich-item-renderer,ytd-video-renderer,ytd-compact-video-renderer,
+ytm-shorts-lockup-view-model,ytd-comment-thread-renderer,
+ytd-rich-grid-media,ytd-thumbnail,ytd-video-meta-block,ytd-channel-name{display:block}
+#grid{display:flex;flex-wrap:wrap;gap:16px;padding:16px;max-width:1200px}
+ytd-rich-item-renderer{width:360px}
+ytd-thumbnail img{width:360px;height:202px;object-fit:cover;display:block;border-radius:12px;background:#222}
+#details{display:flex;gap:12px;padding:12px 0}
+.av{width:36px;height:36px;border-radius:50%;background:#333;display:block}
+#video-title{color:#f1f1f1;text-decoration:none;font-size:16px;font-weight:500;display:block;margin-bottom:4px}
+#metadata-line span{color:#aaa;font-size:13px;margin-right:8px}
+ytd-channel-name a{color:#aaa;text-decoration:none;font-size:13px}
+h2.sec{padding:8px 16px;font-size:16px;color:#aaa;margin:16px 0 0}
+#shorts{display:flex;gap:12px;padding:8px 16px}
+ytm-shorts-lockup-view-model{width:160px}
+ytm-shorts-lockup-view-model img{width:160px;height:284px;object-fit:cover;display:block;border-radius:8px;background:#222}
+ytd-video-renderer{display:flex;gap:16px;padding:12px 16px;max-width:900px}
+ytd-video-renderer img{width:320px;height:180px;object-fit:cover;border-radius:10px;display:block;background:#222}
+ytd-comment-thread-renderer{display:flex;gap:12px;padding:10px 16px;max-width:800px}
+</style></head><body>
+<div id="grid"></div>
+<h2 class="sec">Shorts</h2><div id="shorts"></div>
+<h2 class="sec">搜尋結果</h2><div id="search"></div>
+<h2 class="sec">留言</h2><div id="comments"></div>
+<script>
+const V=[['GTA6 預告完整解析，結局彩蛋全部講給你聽','遊戲阿宅','18萬次觀看'],
+         ['十分鐘學會義大利麵','廚房日記','3.2萬次觀看'],
+         ['【爆雷注意】那部片的最後一幕到底在演什麼','影評K','8.7萬次觀看'],
+         ['台北散步路線推薦','慢活頻道','1.1萬次觀看']];
+function tile(v,i){
+  const r=document.createElement('ytd-rich-item-renderer');
+  r.innerHTML='<div id="content"><ytd-rich-grid-media><div id="dismissible">'+
+   '<ytd-thumbnail><a id="thumbnail" href="/watch?v=v'+i+'">'+
+   '<yt-image><img src="/thumb.png" alt=""></yt-image>'+
+   '<ytd-thumbnail-overlay-time-status-renderer><span>12:'+(10+i)+'</span></ytd-thumbnail-overlay-time-status-renderer>'+
+   '</a></ytd-thumbnail>'+
+   '<div id="details"><a id="avatar-link"><span class="av"></span></a><div id="meta">'+
+   '<h3><a id="video-title" href="/watch?v=v'+i+'" title="'+v[0]+'">'+v[0]+'</a></h3>'+
+   '<ytd-video-meta-block><div id="metadata"><ytd-channel-name><a>'+v[1]+'</a></ytd-channel-name>'+
+   '<div id="metadata-line"><span>'+v[2]+'</span><span>'+(i+1)+' 小時前</span></div></div></ytd-video-meta-block>'+
+   '</div></div></div></ytd-rich-grid-media></div>';
+  return r;
+}
+V.forEach((v,i)=>document.getElementById('grid').appendChild(tile(v,i)));
+
+[['GTA6 街頭實機片段','40萬次觀看'],['貓咪開箱','2萬次觀看']].forEach((s,i)=>{
+  const e=document.createElement('ytm-shorts-lockup-view-model');
+  e.innerHTML='<a href="/shorts/s'+i+'"><img src="/thumb.png" alt=""></a>'+
+    '<h3><span>'+s[0]+'</span></h3><div><span>'+s[1]+'</span></div>';
+  document.getElementById('shorts').appendChild(e);
+});
+
+[['GTA6 發售日確定了嗎？完整整理','電玩快報'],['週末郊山路線','戶外誌']].forEach((s,i)=>{
+  const e=document.createElement('ytd-video-renderer');
+  e.innerHTML='<ytd-thumbnail><a href="/watch?v=s'+i+'"><img src="/thumb.png" alt=""></a></ytd-thumbnail>'+
+    '<div><h3><a id="video-title">'+s[0]+'</a></h3><ytd-channel-name><a>'+s[1]+'</a></ytd-channel-name>'+
+    '<div id="metadata-line"><span>5.5萬次觀看</span></div></div>';
+  document.getElementById('search').appendChild(e);
+});
+
+[['@user_a','這部真的有雷，想看的先不要滑留言'],['@user_b','推薦配菜做法']].forEach(c=>{
+  const e=document.createElement('ytd-comment-thread-renderer');
+  e.innerHTML='<span class="av"></span><div><b>'+c[0]+'</b><div>'+c[1]+'</div></div>';
+  document.getElementById('comments').appendChild(e);
+});
+</script></body></html>

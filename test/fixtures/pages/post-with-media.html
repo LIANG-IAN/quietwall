@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>Mock</title>
+<style>
+body{font:15px/1.6 system-ui,"Noto Sans TC";margin:0;background:#f0f2f5}
+#feed{max-width:520px;margin:0 auto;padding:16px 0}
+[data-pagelet]{background:#fff;margin-bottom:16px;border-radius:10px;overflow:hidden}
+[role=article]{padding:14px}
+.head{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.av{width:40px;height:40px;border-radius:50%;background:#cfd9de}
+.who b{display:block}.who small{color:#65676b}
+.body{margin:8px 0}
+.shot{width:100%;display:block;border-radius:8px}
+video{width:100%;display:block;background:#000;border-radius:8px;margin-top:8px}
+.bar{display:flex;gap:28px;color:#65676b;margin-top:10px;font-size:13px}
+</style></head><body><div id="feed"></div>
+<script>
+const w=document.createElement('div');w.setAttribute('data-pagelet','FeedUnit_0');
+const a=document.createElement('div');a.setAttribute('role','article');
+a.innerHTML='<div class="head"><span class="av"></span><span class="who"><b>即新聞</b><small>2 小時</small></span></div>'+
+ '<div class="body">過去曾任北市警、還是第一位女性警備隊長的陳所長在臉書分享，這種跨4天、封閉主幹道的專案核准下來，整個警察體系要動起來。</div>'+
+ '<img class="shot" src="/thumb.png" alt="現場照片">'+
+ '<video src="/clip.mp4" autoplay loop id="vid"></video>'+
+ '<div class="bar"><span>讚</span><span>留言</span><span>分享</span></div>';
+w.appendChild(a);document.getElementById('feed').appendChild(w);
+</script></body></html>

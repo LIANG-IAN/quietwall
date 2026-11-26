@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><title>Threads</title>
+<style>body{font:15px system-ui,"Noto Sans TC";margin:0}
+main{max-width:560px;margin:auto}
+[data-pressable-container]{border-bottom:1px solid #ddd;padding:14px}</style>
+<main role="main" id="f"></main><script>
+const T=[["@aaa","剛剛追完那部劇，結局我不講，怕雷到人。"],
+         ["@bbb","今天台北天氣好到不行。"],
+         ["@ccc","選舉完之後大家還好嗎。"]];
+T.forEach(t=>{const d=document.createElement('div');d.setAttribute('data-pressable-container','true');
+ d.innerHTML='<b>'+t[0]+'</b><p>'+t[1]+'</p>';document.getElementById('f').appendChild(d);});
+</script>

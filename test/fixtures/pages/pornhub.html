@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>PH</title>
+<style>body{font:15px system-ui;margin:0;background:#1b1b1b;color:#eee}
+ul{display:flex;flex-wrap:wrap;gap:10px;list-style:none;padding:12px}
+li{width:220px}.phimage img{width:220px;height:124px;background:#444;display:block}
+.title{display:block;font-size:13px;margin-top:4px}</style>
+<ul id="list"></ul><script>
+const V=[["/view_video.php?viewkey=a1","Amateur Couple Vlog"],
+         ["/view_video.php?viewkey=b2","Cooking Show Parody"],
+         ["/view_video.php?viewkey=c3","Compilation Special"]];
+V.forEach(v=>{const li=document.createElement('li');li.className='pcVideoListItem';
+ li.innerHTML='<div class="phimage"><a href="'+v[0]+'" title="'+v[1]+'"><img alt="'+v[1]+'"></a></div>'+
+ '<span class="title"><a href="'+v[0]+'">'+v[1]+'</a></span>';
+ document.getElementById('list').appendChild(li);});
+</script>

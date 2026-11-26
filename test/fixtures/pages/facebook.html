@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>FB</title>
+<style>body{font:15px system-ui,"Noto Sans TC";margin:0;background:#f0f2f5}
+[data-pagelet]{background:#fff;margin:12px auto;max-width:520px;border-radius:8px}
+[role=article]{padding:14px}.m{height:120px;background:#9ab;border-radius:6px;margin-top:8px}</style>
+<div id="feed"></div><script>
+const P=[["美食團","今天這家拉麵真的好吃，推薦給大家。"],
+         ["政治觀察","這次選舉的結果讓很多人意外。"],
+         ["旅遊誌","九份老街人超多，但很好拍。"]];
+P.forEach((p,i)=>{const w=document.createElement('div');w.setAttribute('data-pagelet','FeedUnit_'+i);
+ const a=document.createElement('div');a.setAttribute('role','article');a.setAttribute('aria-posinset',String(i+1));
+ a.innerHTML='<b>'+p[0]+'</b><p>'+p[1]+'</p><div class="m"></div>'+
+ '<div role="article" class="cmt"><small>留言：完全同意！</small></div>';
+ w.appendChild(a);document.getElementById('feed').appendChild(w);});
+</script>

@@ -1,0 +1,37 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>Mock Threads</title>
+<style>
+body{font:15px/1.6 system-ui,"Noto Sans TC";margin:0;background:#fff}
+main{max-width:560px;margin:0 auto}
+[data-pressable-container]{border-bottom:1px solid #dbdbdb;padding:14px 10px}
+.w{display:block}
+img.photo{width:100%;max-width:480px;height:270px;object-fit:cover;display:block;border-radius:8px}
+video{width:100%;max-width:480px;height:270px;display:block;background:#000;border-radius:8px}
+.av{width:36px;height:36px;border-radius:50%;background:#ddd;display:inline-block;vertical-align:middle}
+.bar{display:flex;gap:22px;color:#777;font-size:13px;margin-top:8px}
+</style></head><body><main role="main" id="f"></main>
+<script>
+// 模擬 Threads：貼文容器到圖片之間有很多層 wrapper，而且圖片延遲載入
+function wrap(depth, inner){
+  let html = inner;
+  for (let i=0;i<depth;i++) html = '<div class="w">'+html+'</div>';
+  return html;
+}
+function post(name, text, mediaHtml){
+  const d=document.createElement('div');
+  d.setAttribute('data-pressable-container','true');
+  d.innerHTML = wrap(3,'<span class="av"></span> <b>'+name+'</b> <small>2 小時</small>')
+    + wrap(4,'<div>'+text+'</div>')
+    + (mediaHtml ? wrap(9, mediaHtml) : '')
+    + wrap(2,'<div class="bar"><span>讚</span><span>留言</span><span>轉發</span></div>');
+  return d;
+}
+const f=document.getElementById('f');
+f.appendChild(post('aaa_tw','剛剛追完那部劇，結局我不講，怕雷到人。','<img class="photo" alt="劇照" data-src="/thumb.png">'));
+f.appendChild(post('bbb_tw','今天台北天氣好到不行。',''));
+f.appendChild(post('ccc_tw','選舉完之後大家還好嗎，這支影片講得不錯。','<video src="/clip.mp4" autoplay loop muted></video>'));
+// 第 4 則：圖片沒有預留高度，載入前尺寸是 0，2.5 秒後才給 src（最嚴苛的延遲載入）
+f.appendChild(post('ddd_tw','這張圖有雷，小心。','<img class="lazy" alt="延遲圖" style="width:100%;max-width:480px;display:block">'));
+setTimeout(()=>{const i=document.querySelector('img.lazy');i.src='/thumb.png';},2500);
+// 延遲載入圖片（Threads/IG 都是這樣）
+setTimeout(()=>{document.querySelectorAll('img[data-src]').forEach(i=>{i.src=i.dataset.src;});},1500);
+</script></body></html>
