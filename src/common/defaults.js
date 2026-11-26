@@ -9,7 +9,8 @@
     { id: 'instagram', label: 'Instagram',   host: 'instagram.com', stage: 1 },
     { id: 'threads',   label: 'Threads',     host: 'threads.com',   stage: 1 },
     { id: 'x',         label: 'X / Twitter', host: 'x.com',         stage: 1 },
-    { id: 'pornhub',   label: 'Pornhub',     host: 'pornhub.com',   stage: 1 }
+    { id: 'pornhub',   label: 'Pornhub',     host: 'pornhub.com',   stage: 1 },
+    { id: 'youtube',   label: 'YouTube',     host: 'youtube.com',   stage: 2 }
   ];
 
   /** 屏蔽效果 */
@@ -56,7 +57,8 @@
       trigger: 'click',  // click | hover | never
       showReason: true   // 顯示命中的關鍵字
     },
-    sites: { facebook: true, instagram: true, threads: true, x: true, pornhub: true },
+    sites: { facebook: true, instagram: true, threads: true, x: true,
+             pornhub: true, youtube: true },
     /** rule: { id, pattern, mode, caseSensitive, enabled, sites:['*'|siteId...], effect:'inherit'|effectId, note } */
     rules: [],
     /** 例外關鍵字：命中就一定不屏蔽 */
@@ -131,6 +133,7 @@
     if (/(^|\.)threads\.(net|com)$/.test(host)) return 'threads';
     if (/(^|\.)(x|twitter)\.com$/.test(host)) return 'x';
     if (/(^|\.)pornhub\.com$/.test(host)) return 'pornhub';
+    if (/(^|\.)youtube\.com$/.test(host)) return 'youtube';
     return null;
   };
 

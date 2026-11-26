@@ -1,5 +1,20 @@
 # 更新紀錄
 
+## 0.3.0
+
+### 新增
+
+- **支援 YouTube**，涵蓋以下版面：
+  - 首頁與訂閱內容的影片磚（`ytd-rich-item-renderer`、`yt-lockup-view-model`）
+  - 搜尋結果（`ytd-video-renderer`）、頻道頁、播放清單
+  - 觀看頁右側的推薦影片（`ytd-compact-video-renderer`）
+  - Shorts（`ytm-shorts-lockup-view-model`、`ytd-reel-item-renderer`）
+  - 留言（`ytd-comment-thread-renderer`）
+  - 觀看頁播放器：依影片標題、頻道名稱與說明判斷，命中就連播放器一起遮住並暫停
+
+  三種遮蔽範圍在 YouTube 上都適用：「只遮文字」會遮住標題與頻道名、縮圖保持清晰，
+  「只遮圖片與影片」則相反。
+
 ## 0.2.2
 
 - 設定頁的「啟用靜音牆」改名為「總開關（全部網站）」，與 popup 開關的提示文字一致，

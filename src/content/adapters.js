@@ -104,6 +104,40 @@
         }
         return withHrefs(el, defaultText(el));
       }
+    },
+    {
+      id: 'youtube',
+      selectors: [
+        'ytd-rich-item-renderer',        // 首頁／訂閱內容的影片磚
+        'ytd-video-renderer',            // 搜尋結果
+        'ytd-compact-video-renderer',    // 觀看頁右側的推薦
+        'ytd-grid-video-renderer',       // 頻道頁
+        'ytd-playlist-video-renderer',   // 播放清單
+        'ytd-reel-item-renderer',        // Shorts
+        'ytm-shorts-lockup-view-model',
+        'ytm-shorts-lockup-view-model-v2',
+        'yt-lockup-view-model',          // 新版版面的影片磚
+        'ytd-playlist-renderer',
+        'ytd-radio-renderer',
+        'ytd-comment-thread-renderer',   // 留言
+        '#movie_player'                  // 觀看頁的播放器，依影片標題判斷
+      ],
+      text(el) {
+        if (el.id === 'movie_player') {
+          const parts = [];
+          const h1 = document.querySelector(
+            'h1.ytd-watch-metadata, #title h1, ytd-watch-metadata h1');
+          if (h1) parts.push(h1.textContent || '');
+          const ch = document.querySelector(
+            '#owner ytd-channel-name a, ytd-video-owner-renderer #channel-name a');
+          if (ch) parts.push(ch.textContent || '');
+          const desc = document.querySelector('#description-inline-expander');
+          if (desc) parts.push((desc.textContent || '').slice(0, 1500));
+          if (!parts.join('').trim()) parts.push(document.title || '');
+          return parts.join('\n');
+        }
+        return defaultText(el);
+      }
     }
   ];
 

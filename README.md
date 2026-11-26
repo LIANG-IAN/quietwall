@@ -29,8 +29,9 @@
 | Threads | ✅ 第一階段 | 串文列表 |
 | X / Twitter | ✅ 第一階段 | 時間軸推文（含轉推、引用） |
 | Pornhub | ✅ 第一階段 | 影片列表、推薦區塊、播放頁（依標題與標籤判斷） |
+| YouTube | ✅ 第二階段 | 首頁、搜尋結果、推薦、Shorts、留言、觀看頁播放器 |
 
-後續階段可再加入 YouTube、Reddit、Dcard、PTT 等，只需在 `src/content/adapters.js`
+後續階段可再加入 Reddit、Dcard、PTT 等，只需在 `src/content/adapters.js`
 增加一組設定，比對與遮罩邏輯都不必改動。
 
 ## 設計初衷
