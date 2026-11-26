@@ -42,7 +42,14 @@
       const host = parent.closest('.pb-host');
       if (!host) return false;
       // 自己的遮罩套在外層容器上 → 不算被別人蓋住
-      return host !== el.__pbTarget;
+      const mine = el.__pbTargets;
+      return !(mine && mine.indexOf(host) !== -1);
+    }
+
+    function clearTargets(el) {
+      if (!el.__pbTargets) return;
+      for (let i = 0; i < el.__pbTargets.length; i++) PB.Masker.unmask(el.__pbTargets[i]);
+      el.__pbTargets = null;
     }
 
     function processOne(el, compiled) {
@@ -60,17 +67,17 @@
 
       const rule = PB.evaluate(raw, compiled, adapter.id);
 
-      if (rule) {
-        let target = el;
-        if (adapter.container) {
-          try { target = adapter.container(el) || el; } catch (e) { target = el; }
-        }
-        el.__pbTarget = target;
-        PB.Masker.mask(target, rule);
-      } else if (el.__pbTarget) {
-        PB.Masker.unmask(el.__pbTarget);
-        el.__pbTarget = null;
+      if (!rule) { clearTargets(el); return; }
+
+      let container = el;
+      if (adapter.container) {
+        try { container = adapter.container(el) || el; } catch (e) { container = el; }
       }
+
+      // 依「遮蔽範圍」決定要蓋住貼文的哪些部分
+      clearTargets(el);
+      const applied = PB.Masker.maskPost(container, rule, compiled.scope);
+      el.__pbTargets = applied.length ? applied : null;
     }
 
     function run(nodes) {

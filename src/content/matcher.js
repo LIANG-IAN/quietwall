@@ -67,6 +67,7 @@
     return {
       rules, allow,
       active: rules.length > 0,
+      scope: (settings.effect && settings.effect.scope) || 'all',
       // 設定指紋：變動時所有節點重新判定
       version: JSON.stringify([
         settings.enabled, settings.effect, settings.reveal, settings.sites,

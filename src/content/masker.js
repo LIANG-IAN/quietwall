@@ -5,6 +5,10 @@
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const masked = new Set();
+  /* 同一則貼文在「只遮文字／只遮影片」模式下會拆成好幾塊遮罩，
+     用群組把它們綁在一起，點任何一塊都一起顯示。 */
+  const groups = new Map();
+  let groupSeq = 0;
   let cfg = null;
   let filterSize = -1;
 
@@ -102,19 +106,117 @@
     whenBodyReady(() => ensureFilter(Math.round(PB.clamp(settings.effect.mosaic, 2, 40))));
   }
 
+  /* ── 挑出貼文裡要遮住的區塊 ──────────────────────────
+     「整則貼文」就是貼文本身；「只遮文字」「只遮圖片與影片」則要在貼文裡
+     找出對應的區塊，各自蓋一塊遮罩。 */
+  const MEDIA_SEL = 'img, video, canvas, picture, iframe';
+  const MEDIA_TAGS = { IMG: 1, VIDEO: 1, CANVAS: 1, PICTURE: 1, IFRAME: 1 };
+
+  let bgCache = null;
+
+  /** 用 CSS background-image 呈現的圖片也算畫面（漸層不算） */
+  function hasBgImage(el) {
+    if (bgCache && bgCache.has(el)) return bgCache.get(el);
+    let ok = false;
+    try {
+      const bg = getComputedStyle(el).backgroundImage;
+      ok = !!bg && bg !== 'none' && bg.indexOf('url(') !== -1;
+    } catch (e) { ok = false; }
+    if (bgCache) bgCache.set(el, ok);
+    return ok;
+  }
+
+  /** 夠大的圖片／影片才算「畫面」，頭像、icon、表情符號不算 */
+  function isLargeMedia(el) {
+    if (!MEDIA_TAGS[el.tagName] && !hasBgImage(el)) return false;
+    const r = el.getBoundingClientRect();
+    return r.width >= 100 && r.height >= 70;
+  }
+
+  function anyLargeMedia(node, depth) {
+    const kids = node.children;
+    for (let i = 0; i < kids.length; i++) {
+      const el = kids[i];
+      if (el.hasAttribute && el.hasAttribute('data-pb-ui')) continue;
+      if (isLargeMedia(el)) return true;
+      if (depth < 4 && el.children.length && anyLargeMedia(el, depth + 1)) return true;
+    }
+    return false;
+  }
+
+  function hasLargeMedia(el) {
+    return isLargeMedia(el) || anyLargeMedia(el, 0);
+  }
+
+  /** 去掉被其他項目包住的重複項 */
+  function dropNested(list) {
+    return list.filter(el => !list.some(other => other !== el && other.contains(el)));
+  }
+
+  function mediaTargets(root) {
+    const out = [];
+    (function walk(node, depth) {
+      const kids = node.children;
+      for (let i = 0; i < kids.length; i++) {
+        const el = kids[i];
+        if (el.hasAttribute && el.hasAttribute('data-pb-ui')) continue;
+        const media = isLargeMedia(el);
+        const text = (el.textContent || '').replace(/\s+/g, '');
+        // 這塊就是畫面、裡面沒有文字 → 整塊遮掉
+        if (media && !text.length) { out.push(el); continue; }
+        if (depth < 6 && el.children.length) walk(el, depth + 1);
+        else if (media) out.push(el);
+      }
+    })(root, 0);
+    return dropNested(out);
+  }
+
+  function textTargets(root) {
+    const out = [];
+    (function walk(node, depth) {
+      const kids = node.children;
+      for (let i = 0; i < kids.length; i++) {
+        const el = kids[i];
+        if (el.hasAttribute && el.hasAttribute('data-pb-ui')) continue;
+        if (hasLargeMedia(el)) {
+          // 這塊裡面有畫面，再往下找純文字的部分
+          if (depth < 6) walk(el, depth + 1);
+          continue;
+        }
+        if ((el.textContent || '').replace(/\s+/g, '').length >= 1) out.push(el);
+      }
+    })(root, 0);
+    return dropNested(out);
+  }
+
+  /** @returns {Element[]} 要蓋遮罩的區塊；空陣列代表這則貼文沒有需要遮的東西 */
+  function pickTargets(container, scope) {
+    bgCache = new WeakMap(); // 單次呼叫內共用，避免重複 getComputedStyle
+    if (scope === 'media') return mediaTargets(container);
+    if (scope === 'text') {
+      const t = textTargets(container);
+      return t.length ? t : [];
+    }
+    return [container];
+  }
+
   /* ── 覆蓋層 ───────────────────────────────────────── */
-  function buildOverlay(rule) {
+  function buildOverlay(rule, showChip) {
     const ui = document.createElement('div');
-    ui.className = 'pb-ui';
+    ui.className = showChip ? 'pb-ui' : 'pb-ui pb-plain';
     ui.setAttribute('data-pb-ui', '');
     if (cfg.reveal.trigger === 'never') {
       ui.setAttribute('aria-label', '這則內容已被靜音牆屏蔽');
+      ui.classList.add('pb-locked');
     } else {
       ui.setAttribute('role', 'button');
       ui.setAttribute('tabindex', '0');
       ui.setAttribute('aria-label',
         '這則內容已被屏蔽（命中關鍵字：' + rule.label + '），按下以顯示原文');
     }
+
+    // 同一則貼文拆成多塊時，只有其中一塊掛提示膠囊，其餘保持乾淨
+    if (!showChip) return ui;
 
     const chip = document.createElement('span');
     chip.className = 'pb-chip';
@@ -146,8 +248,6 @@
       hint.className = 'pb-hint';
       hint.textContent = cfg.reveal.trigger === 'hover' ? '移過來顯示' : '點一下顯示';
       chip.appendChild(hint);
-    } else {
-      ui.classList.add('pb-locked');
     }
 
     ui.appendChild(chip);
@@ -181,6 +281,7 @@
      被遮住的影片如果繼續播放，聲音還是會跑出來，而且使用者為了按暫停
      就得先點開遮罩、反而看到不想看的內容。所以遮起來的同時就靜音並暫停。 */
   function eachMedia(host, fn) {
+    if (host.tagName === 'VIDEO' || host.tagName === 'AUDIO') fn(host);
     let list;
     try { list = host.querySelectorAll('video, audio'); } catch (e) { return; }
     for (let i = 0; i < list.length; i++) fn(list[i]);
@@ -188,7 +289,8 @@
 
   function silence(media) {
     if (!media.__pbMedia) {
-      media.__pbMedia = { muted: media.muted, autoplay: media.autoplay };
+      media.__pbMedia = { muted: media.muted, autoplay: media.autoplay,
+                          playing: !media.paused };
     }
     try {
       media.muted = true;
@@ -199,11 +301,17 @@
 
   function restoreMedia(media) {
     if (!media.__pbMedia) return;
-    try {
-      media.muted = media.__pbMedia.muted;
-      media.autoplay = media.__pbMedia.autoplay;
-    } catch (e) { /* noop */ }
+    const saved = media.__pbMedia;
     media.__pbMedia = null;
+    try {
+      media.muted = saved.muted;
+      media.autoplay = saved.autoplay;
+      // 是我們把它按停的，就接著播回去
+      if ((saved.playing || saved.autoplay) && media.paused) {
+        const r = media.play();
+        if (r && typeof r.catch === 'function') r.catch(() => {});
+      }
+    } catch (e) { /* noop */ }
   }
 
   function mediaOff(host) { eachMedia(host, silence); }
@@ -218,7 +326,16 @@
     if (m && typeof m.pause === 'function') silence(m);
   }
 
-  function reveal(host) {
+  /** 同一則貼文的所有遮罩區塊 */
+  function groupMembers(host) {
+    const set = host.__pbGroup && groups.get(host.__pbGroup);
+    if (!set) return [host];
+    const out = [];
+    set.forEach(h => { if (h.isConnected) out.push(h); });
+    return out.length ? out : [host];
+  }
+
+  function revealOne(host) {
     if (!host.classList.contains('pb-host')) return;
     host.classList.add('pb-revealed');
     setRevealedLabel(host, true);
@@ -226,15 +343,18 @@
     if (host.__pbUi) host.__pbUi.setAttribute('aria-label', '重新屏蔽這則內容');
   }
 
-  function conceal(host) {
+  function concealOne(host) {
     host.classList.remove('pb-revealed');
     setRevealedLabel(host, false);
-    mediaOff(host);
+    if (!host.__pbDeco) mediaOff(host);
     if (host.__pbUi && host.__pbRule) {
       host.__pbUi.setAttribute('aria-label',
         '這則內容已被屏蔽（命中關鍵字：' + host.__pbRule.label + '），按下以顯示原文');
     }
   }
+
+  function reveal(host) { groupMembers(host).forEach(revealOne); }
+  function conceal(host) { groupMembers(host).forEach(concealOne); }
 
   function onOverlayClick(e) {
     if (cfg && cfg.reveal.trigger === 'never') {
@@ -242,7 +362,8 @@
       e.stopPropagation();
       return;
     }
-    const host = e.currentTarget.parentElement;
+    const t = e.currentTarget;
+    const host = t.classList.contains('pb-host') ? t : t.parentElement;
     if (!host) return;
     e.preventDefault();
     e.stopPropagation();
@@ -278,37 +399,75 @@
   }
 
   /* ── 主要 API ─────────────────────────────────────── */
-  function mask(host, rule) {
+  /**
+   * @param {Element} host  要蓋遮罩的元素
+   * @param {object}  rule  命中的規則
+   * @param {object} [opts] { group: 群組 id, chip: 是否顯示提示膠囊 }
+   */
+  function mask(host, rule, opts) {
     if (!host || !cfg) return false;
+    opts = opts || {};
+    const chip = opts.chip !== false;
     if (masked.has(host)) {
-      if (host.__pbRule && host.__pbRule.id === rule.id) return false;
+      if (host.__pbRule && host.__pbRule.id === rule.id &&
+          host.__pbGroup === (opts.group || null)) return false;
       unmask(host);
     }
-    // 外層貼文被遮住時，先清掉裡面已經遮過的區塊，避免疊兩層遮罩
-    let inner;
-    try { inner = host.querySelectorAll('.pb-host'); } catch (e) { inner = []; }
-    for (let i = 0; i < inner.length; i++) unmask(inner[i]);
+    // 整則遮住時，先清掉裡面已經遮過的區塊，避免疊兩層遮罩。
+    // 同一組（只遮文字／只遮影片拆出來的多塊）之間是刻意並存的，不能互相清掉。
+    if (!opts.group) {
+      let inner;
+      try { inner = host.querySelectorAll('.pb-host'); } catch (e) { inner = []; }
+      for (let i = 0; i < inner.length; i++) unmask(inner[i]);
+    }
 
-    const fx = (rule.effect && rule.effect !== 'inherit') ? rule.effect : cfg.effect.type;
+    // img / video 這類元素不能放子元素，效果只好直接套在它自己身上
+    const solo = !!MEDIA_TAGS[host.tagName];
+    // 徽章：只掛提示膠囊、不套任何效果（用在整則貼文只遮到圖片影片時）
+    const deco = opts.badge === true;
+    const fx = deco ? null
+      : ((rule.effect && rule.effect !== 'inherit') ? rule.effect : cfg.effect.type);
 
-    try {
-      if (getComputedStyle(host).position === 'static') host.classList.add('pb-rel');
-    } catch (e) { host.classList.add('pb-rel'); }
+    if (!solo) {
+      try {
+        if (getComputedStyle(host).position === 'static') host.classList.add('pb-rel');
+      } catch (e) { host.classList.add('pb-rel'); }
+    }
 
-    host.classList.add('pb-host', 'pb-fx-' + fx);
+    host.classList.add('pb-host');
+    if (solo) host.classList.add('pb-solo');
+    if (deco) host.classList.add('pb-deco');
+    if (fx) host.classList.add('pb-fx-' + fx);
     host.__pbRule = rule;
     host.__pbFx = fx;
+    host.__pbSolo = solo;
+    host.__pbDeco = deco;
 
-    const ui = buildOverlay(rule);
-    ui.addEventListener('click', onOverlayClick, true);
-    ui.addEventListener('keydown', onOverlayKey, true);
+    let ui = null;
+    if (solo) {
+      // 效果直接在元素上，點擊與鍵盤也掛在元素上
+      host.addEventListener('click', onOverlayClick, true);
+      host.addEventListener('keydown', onOverlayKey, true);
+      if (cfg.reveal.trigger !== 'never' && !host.hasAttribute('tabindex')) {
+        host.setAttribute('tabindex', '0');
+        host.__pbTabindex = true;
+      }
+      host.setAttribute('aria-label', cfg.reveal.trigger === 'never'
+        ? '這張圖片／影片已被靜音牆屏蔽'
+        : '這張圖片／影片已被屏蔽（命中關鍵字：' + rule.label + '），按下以顯示');
+    } else {
+      ui = buildOverlay(rule, chip);
+      if (deco) ui.classList.add('pb-badge');
+      ui.addEventListener('click', onOverlayClick, true);
+      ui.addEventListener('keydown', onOverlayKey, true);
+      host.appendChild(ui);
+    }
     host.__pbUi = ui;
-    host.appendChild(ui);
     host.addEventListener('focusin', onFocusIn, true);
     host.addEventListener('play', onMediaPlay, true);
     host.addEventListener('playing', onMediaPlay, true);
-    mediaOff(host);
-    applyCompact(host, ui);
+    if (!deco) mediaOff(host);
+    if (ui) applyCompact(host, ui);
 
     if (cfg.reveal.trigger === 'hover') {
       host.addEventListener('mouseenter', onHoverIn);
@@ -317,14 +476,67 @@
     }
 
     masked.add(host);
+    host.__pbGroup = opts.group || null;
+    if (host.__pbGroup) {
+      let set = groups.get(host.__pbGroup);
+      if (!set) { set = new Set(); groups.set(host.__pbGroup, set); }
+      set.add(host);
+    }
     return true;
+  }
+
+  /** 產生一個新的群組 id，讓同一則貼文的多塊遮罩連動 */
+  function newGroup() { return 'g' + (++groupSeq); }
+
+  /**
+   * 把一則貼文依「遮蔽範圍」遮起來。
+   * 提示膠囊掛在最大的一塊；若所有區塊都是 img / video（放不下膠囊），
+   * 就在貼文容器上另外掛一個只有膠囊的徽章。
+   * @returns {Element[]} 實際被遮住的元素
+   */
+  function maskPost(container, rule, scope) {
+    const targets = pickTargets(container, scope);
+    if (!targets.length) return [];
+
+    let chipOn = null, best = -1;
+    for (let i = 0; i < targets.length; i++) {
+      const t = targets[i];
+      if (MEDIA_TAGS[t.tagName]) continue;
+      const r = t.getBoundingClientRect();
+      const area = r.width * r.height;
+      if (area > best) { best = area; chipOn = t; }
+    }
+
+    const needBadge = !chipOn && targets.indexOf(container) === -1;
+    const list = needBadge ? targets.concat([container]) : targets.slice();
+    const group = list.length > 1 ? newGroup() : null;
+
+    for (let i = 0; i < targets.length; i++) {
+      mask(targets[i], rule, { group, chip: targets[i] === chipOn });
+    }
+    if (needBadge) mask(container, rule, { group, badge: true });
+    return list;
   }
 
   function unmask(host) {
     if (!host) return;
     masked.delete(host);
-    host.classList.remove('pb-host', 'pb-rel', 'pb-revealed');
+    if (host.__pbGroup) {
+      const set = groups.get(host.__pbGroup);
+      if (set) {
+        set.delete(host);
+        if (!set.size) groups.delete(host.__pbGroup);
+      }
+      host.__pbGroup = null;
+    }
+    host.classList.remove('pb-host', 'pb-rel', 'pb-revealed', 'pb-solo', 'pb-deco');
     if (host.__pbFx) host.classList.remove('pb-fx-' + host.__pbFx);
+    if (host.__pbSolo) {
+      host.removeEventListener('click', onOverlayClick, true);
+      host.removeEventListener('keydown', onOverlayKey, true);
+      host.removeAttribute('aria-label');
+      if (host.__pbTabindex) { host.removeAttribute('tabindex'); host.__pbTabindex = false; }
+    }
     host.removeEventListener('focusin', onFocusIn, true);
     host.removeEventListener('play', onMediaPlay, true);
     host.removeEventListener('playing', onMediaPlay, true);
@@ -342,6 +554,8 @@
     host.__pbRule = null;
     host.__pbFx = null;
     host.__pbHover = false;
+    host.__pbSolo = false;
+    host.__pbDeco = false;
   }
 
   function resetAll() {
@@ -356,7 +570,17 @@
 
   PB.Masker = {
     setConfig, mask, unmask, resetAll, reveal, conceal, sweep,
-    get count() { return masked.size; },
+    pickTargets, newGroup, maskPost,
+    get count() {
+      const seen = new Set();
+      let n = 0;
+      masked.forEach(h => {
+        if (h.__pbDeco) return;
+        if (h.__pbGroup) { if (!seen.has(h.__pbGroup)) { seen.add(h.__pbGroup); n++; } }
+        else n++;
+      });
+      return n;
+    },
     isMasked: host => masked.has(host)
   };
 })(typeof globalThis !== 'undefined' ? globalThis : self);

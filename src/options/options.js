@@ -320,14 +320,14 @@
 
   function refreshPreview() {
     const post = $('#previewPost');
-    PB.Masker.unmask(post);
+    PB.Masker.resetAll();
     PB.Masker.setConfig(settings);
-    if (settings.effect.type === 'hide') {
-      // 預覽不真的隱藏，否則畫面上什麼都看不到
-      PB.Masker.mask(post, { id: 'preview', label: '劇透', effect: 'collapse' });
-    } else {
-      PB.Masker.mask(post, { id: 'preview', label: '劇透', effect: 'inherit' });
-    }
+    // 預覽不真的隱藏，否則畫面上什麼都看不到
+    const rule = {
+      id: 'preview', label: '劇透',
+      effect: settings.effect.type === 'hide' ? 'collapse' : 'inherit'
+    };
+    PB.Masker.maskPost(post, rule, settings.effect.scope);
   }
 
   function bindRange(inputSel, outSel, key, format) {
@@ -347,6 +347,11 @@
   }
 
   function initEffectPanel() {
+    buildRadios($('#scopeOptions'), PB.SCOPES, 'scope', settings.effect.scope, id => {
+      settings.effect.scope = id;
+      save();
+      refreshPreview();
+    });
     buildRadios($('#effectOptions'), PB.EFFECTS, 'fx', settings.effect.type, id => {
       settings.effect.type = id;
       syncRangeVisibility();

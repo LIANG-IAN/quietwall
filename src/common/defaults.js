@@ -28,6 +28,13 @@
     { id: 'regex', label: '正規表示式', desc: '進階：例如 (選舉|罷免).*結果' }
   ];
 
+  /** 遮蔽範圍：一則貼文裡要遮住哪些部分 */
+  PB.SCOPES = [
+    { id: 'all',   label: '整則貼文', desc: '文字、圖片、影片全部遮住' },
+    { id: 'text',  label: '只遮文字', desc: '看得到圖片和影片，文字被遮住' },
+    { id: 'media', label: '只遮圖片與影片', desc: '讀得到文字，但看不到畫面' }
+  ];
+
   PB.TRIGGERS = [
     { id: 'click', label: '點一下顯示' },
     { id: 'hover', label: '滑鼠移過去顯示' },
@@ -39,6 +46,7 @@
     enabled: true,
     effect: {
       type: 'blur',
+      scope: 'all',      // all | text | media
       blur: 14,          // px
       mosaic: 10,        // px 馬賽克格子大小
       darkness: 0.96,    // 黑條不透明度
@@ -80,6 +88,7 @@
     s.effect.darkness = clamp(s.effect.darkness, 0.3, 1);
     s.effect.collapseHeight = clamp(s.effect.collapseHeight, 24, 160);
     if (!PB.EFFECTS.some(e => e.id === s.effect.type)) s.effect.type = 'blur';
+    if (!PB.SCOPES.some(x => x.id === s.effect.scope)) s.effect.scope = 'all';
     if (!PB.TRIGGERS.some(t => t.id === s.reveal.trigger)) s.reveal.trigger = 'click';
     return s;
   };
