@@ -157,6 +157,14 @@
     return bg.length > 0;
   }
 
+  /** 這塊裡面有沒有「自己的」文字（不算我們蓋上去的遮罩提示） */
+  function hasOwnText(el) {
+    const raw = el.textContent || '';
+    if (!raw.replace(/\s+/g, '').length) return false;
+    if (!masked.size) return true;              // 還沒有任何遮罩，不必扣
+    return PB.ownText(el).replace(/\s+/g, '').length > 0;
+  }
+
   /** 去掉被其他項目包住的重複項 */
   function dropNested(list) {
     return list.filter(el => !list.some(other => other !== el && other.contains(el)));
@@ -169,7 +177,7 @@
   function pureMediaBlock(media, root) {
     let node = media, parent = media.parentElement;
     while (parent && parent !== root && root.contains(parent)) {
-      if ((parent.textContent || '').replace(/\s+/g, '').length) break;
+      if (hasOwnText(parent)) break;
       node = parent;
       parent = parent.parentElement;
     }
@@ -206,7 +214,7 @@
           if (depth < 12) walk(el, depth + 1);
           continue;
         }
-        if ((el.textContent || '').replace(/\s+/g, '').length >= 1) out.push(el);
+        if (hasOwnText(el)) out.push(el);
       }
     })(root, 0);
     return dropNested(out);

@@ -7,7 +7,7 @@
 
   /** 預設取字：內文 + 圖片 alt + aria-label + 連結 title */
   function defaultText(el) {
-    let t = el.textContent || '';
+    let t = PB.ownText(el);
     if (t.length > MAX_TEXT) t = t.slice(0, MAX_TEXT);
     const extra = [];
     const nodes = el.querySelectorAll('[alt],[aria-label],[title]');
@@ -82,26 +82,13 @@
         'li.pcVideoListItem',
         'li.videoblock',
         'div.phimage',
-        'li.videoBox',
-        'div.video-wrapper > div.title',
-        '#player'
+        'li.videoBox'
       ],
+      // 只處理列表與推薦區塊。自己點進去的影片頁不遮——點進去就是想看。
       container(el) {
-        if (el.id === 'player') return el;
         return el.closest('li') || el.closest('div.wrap') || el;
       },
       text(el) {
-        // 影片播放頁：沒有自己的文字，改用頁面標題與標籤判斷
-        if (el.id === 'player') {
-          const parts = [];
-          const h1 = document.querySelector('h1.title, h1 .inlineFree');
-          if (h1) parts.push(h1.textContent || '');
-          document.querySelectorAll(
-            '.categoriesWrapper a, .tagsWrapper a, .pornstarsWrapper a'
-          ).forEach(a => parts.push(a.textContent || ''));
-          if (!parts.length) parts.push(document.title || '');
-          return parts.join('\n');
-        }
         return withHrefs(el, defaultText(el));
       }
     },
@@ -119,25 +106,10 @@
         'yt-lockup-view-model',          // 新版版面的影片磚
         'ytd-playlist-renderer',
         'ytd-radio-renderer',
-        'ytd-comment-thread-renderer',   // 留言
-        '#movie_player'                  // 觀看頁的播放器，依影片標題判斷
+        'ytd-comment-thread-renderer'    // 留言
       ],
-      text(el) {
-        if (el.id === 'movie_player') {
-          const parts = [];
-          const h1 = document.querySelector(
-            'h1.ytd-watch-metadata, #title h1, ytd-watch-metadata h1');
-          if (h1) parts.push(h1.textContent || '');
-          const ch = document.querySelector(
-            '#owner ytd-channel-name a, ytd-video-owner-renderer #channel-name a');
-          if (ch) parts.push(ch.textContent || '');
-          const desc = document.querySelector('#description-inline-expander');
-          if (desc) parts.push((desc.textContent || '').slice(0, 1500));
-          if (!parts.join('').trim()) parts.push(document.title || '');
-          return parts.join('\n');
-        }
-        return defaultText(el);
-      }
+      // 只處理清單、推薦與留言。自己點進去的影片頁不遮——點進去就是想看。
+      text: defaultText
     }
   ];
 

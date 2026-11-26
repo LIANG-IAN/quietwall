@@ -89,9 +89,14 @@
     }
 
     function sameTargets(a, b) {
-      if (!a || !b || a.length !== b.length) return false;
-      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-      return a.length > 0;
+      if (!a || !b || !a.length || a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+        // 設定變更會先把所有遮罩清掉，網站重繪也可能把覆蓋層弄不見。
+        // 挑出來的區塊一樣不代表還遮著，得確認它真的還在被遮。
+        if (!PB.Masker.isMasked(a[i])) return false;
+      }
+      return true;
     }
 
     function run(nodes) {

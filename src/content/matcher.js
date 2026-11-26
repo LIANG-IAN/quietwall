@@ -16,6 +16,26 @@
 
   function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
+  /**
+   * 取出元素的文字，但排除我們自己蓋上去的遮罩提示。
+   * 遮罩膠囊上寫著「已屏蔽 · <關鍵字>」，若把它算進貼文內容，
+   * 會造成兩個問題：判定區塊時被自己干擾，以及貼文內容就算換掉了，
+   * 膠囊裡的關鍵字仍讓它持續命中。
+   */
+  PB.ownText = function (el) {
+    let t = el.textContent || '';
+    if (!t) return t;
+    let uis;
+    try { uis = el.querySelectorAll('[data-pb-ui]'); } catch (e) { return t; }
+    for (let i = 0; i < uis.length; i++) {
+      const u = uis[i].textContent;
+      if (!u) continue;
+      const at = t.indexOf(u);
+      if (at !== -1) t = t.slice(0, at) + t.slice(at + u.length);
+    }
+    return t;
+  };
+
   /** 把一條使用者規則編譯成可執行的比對器；失敗回傳 null */
   function compileRule(rule) {
     const r = PB.normalizeRule(rule);
