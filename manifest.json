@@ -1,0 +1,65 @@
+{
+  "manifest_version": 3,
+  "name": "靜音牆 QuietWall － 社群關鍵字屏蔽",
+  "version": "0.1.0",
+  "description": "用自訂關鍵字屏蔽社群網站上不想看到的貼文與影片，支援模糊、馬賽克、黑條等效果，點一下即可查看原文。",
+  "minimum_chrome_version": "111",
+  "permissions": ["storage", "contextMenus", "activeTab"],
+  "host_permissions": [
+    "https://*.facebook.com/*",
+    "https://*.instagram.com/*",
+    "https://*.threads.net/*",
+    "https://*.threads.com/*",
+    "https://*.x.com/*",
+    "https://*.twitter.com/*",
+    "https://*.pornhub.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "靜音牆 QuietWall",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.facebook.com/*",
+        "https://*.instagram.com/*",
+        "https://*.threads.net/*",
+        "https://*.threads.com/*",
+        "https://*.x.com/*",
+        "https://*.twitter.com/*",
+        "https://*.pornhub.com/*"
+      ],
+      "js": [
+        "src/common/defaults.js",
+        "src/content/matcher.js",
+        "src/content/adapters.js",
+        "src/content/masker.js",
+        "src/content/scanner.js",
+        "src/content/main.js"
+      ],
+      "css": ["src/content/mask.css"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ]
+}

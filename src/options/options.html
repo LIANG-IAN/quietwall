@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>靜音牆 QuietWall － 設定</title>
+<link rel="stylesheet" href="../content/mask.css">
+<link rel="stylesheet" href="options.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div><strong>靜音牆</strong><small>QuietWall</small></div>
+    </div>
+    <nav id="nav">
+      <button type="button" class="navbtn" data-panel="rules" aria-current="true">屏蔽關鍵字</button>
+      <button type="button" class="navbtn" data-panel="allow">例外關鍵字</button>
+      <button type="button" class="navbtn" data-panel="effect">顯示效果</button>
+      <button type="button" class="navbtn" data-panel="sites">支援網站</button>
+      <button type="button" class="navbtn" data-panel="data">備份與還原</button>
+    </nav>
+    <label class="master">
+      <input type="checkbox" id="masterToggle">
+      <span>啟用靜音牆</span>
+    </label>
+  </aside>
+
+  <main class="main">
+    <!-- 屏蔽關鍵字 -->
+    <section class="panel" data-panel="rules">
+      <h2>屏蔽關鍵字</h2>
+      <p class="sub">命中任一條規則的貼文就會被遮住。中文不需要空格，直接填詞即可。</p>
+
+      <form class="addbar" id="addRuleForm">
+        <input type="text" id="newRule" placeholder="輸入要屏蔽的字詞，例如：雷、結局、選舉" autocomplete="off" maxlength="200">
+        <select id="newMode" aria-label="比對模式"></select>
+        <button type="submit">新增</button>
+      </form>
+
+      <details class="bulk">
+        <summary>一次貼上多個關鍵字</summary>
+        <textarea id="bulkText" rows="6" placeholder="一行一個關鍵字&#10;劇透&#10;結局&#10;спойлер"></textarea>
+        <button type="button" id="bulkAdd">全部加入</button>
+      </details>
+
+      <div class="listhead">
+        <input type="search" id="ruleSearch" placeholder="搜尋規則…" aria-label="搜尋規則">
+        <span class="muted" id="ruleCount"></span>
+      </div>
+      <div id="ruleList" class="list"></div>
+      <p class="empty" id="ruleEmpty" hidden>還沒有任何規則。先加一個你最不想看到的字吧。</p>
+    </section>
+
+    <!-- 例外關鍵字 -->
+    <section class="panel" data-panel="allow" hidden>
+      <h2>例外關鍵字</h2>
+      <p class="sub">命中例外的貼文「一定不會」被屏蔽，優先於上面所有規則。適合處理誤殺，例如屏蔽「蘋果」但想看「蘋果派食譜」。</p>
+      <form class="addbar" id="addAllowForm">
+        <input type="text" id="newAllow" placeholder="輸入例外字詞" autocomplete="off" maxlength="200">
+        <select id="newAllowMode" aria-label="比對模式"></select>
+        <button type="submit">新增</button>
+      </form>
+      <div id="allowList" class="list"></div>
+      <p class="empty" id="allowEmpty" hidden>目前沒有例外關鍵字。</p>
+    </section>
+
+    <!-- 顯示效果 -->
+    <section class="panel" data-panel="effect" hidden>
+      <h2>顯示效果</h2>
+      <p class="sub">右邊是即時預覽，可以直接點它試試看「顯示原文」。</p>
+
+      <div class="fxgrid">
+        <div class="fxcol">
+          <fieldset>
+            <legend>遮蔽方式</legend>
+            <div id="effectOptions" class="radios"></div>
+          </fieldset>
+
+          <fieldset id="rangeBlur">
+            <legend>模糊強度 <output id="blurOut"></output></legend>
+            <input type="range" id="blurRange" min="2" max="40" step="1">
+          </fieldset>
+
+          <fieldset id="rangeMosaic">
+            <legend>馬賽克格子大小 <output id="mosaicOut"></output></legend>
+            <input type="range" id="mosaicRange" min="2" max="40" step="1">
+          </fieldset>
+
+          <fieldset id="rangeDark">
+            <legend>黑條濃度 <output id="darkOut"></output></legend>
+            <input type="range" id="darkRange" min="30" max="100" step="1">
+          </fieldset>
+
+          <fieldset id="rangeCollapse">
+            <legend>收合後高度 <output id="collapseOut"></output></legend>
+            <input type="range" id="collapseRange" min="24" max="160" step="2">
+          </fieldset>
+
+          <fieldset>
+            <legend>怎麼看到原文</legend>
+            <div id="triggerOptions" class="radios"></div>
+            <label class="check">
+              <input type="checkbox" id="showReason">
+              <span>在遮罩上顯示命中的關鍵字</span>
+            </label>
+          </fieldset>
+        </div>
+
+        <div class="fxcol">
+          <div class="previewwrap">
+            <span class="previewtag">即時預覽</span>
+            <div class="post" id="previewPost">
+              <div class="post-head">
+                <span class="avatar"></span>
+                <span class="who"><b>某個朋友</b><small>3 小時前</small></span>
+              </div>
+              <p class="post-text">昨天終於看完最後一集了，沒想到結局居然是這樣，<br>整個劇透大爆炸，完全沒有心理準備……</p>
+              <div class="post-img"></div>
+              <div class="post-foot"><span>讚</span><span>留言</span><span>分享</span></div>
+            </div>
+          </div>
+          <p class="muted small">提示：「完全隱藏」會讓貼文整則消失，之後就無法在頁面上點開，請謹慎使用。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 支援網站 -->
+    <section class="panel" data-panel="sites" hidden>
+      <h2>支援網站</h2>
+      <p class="sub">可以個別關掉某個網站的屏蔽功能。</p>
+      <div id="siteList" class="list"></div>
+    </section>
+
+    <!-- 備份 -->
+    <section class="panel" data-panel="data" hidden>
+      <h2>備份與還原</h2>
+      <p class="sub">設定存在這台電腦的瀏覽器裡，換裝置時可以用檔案搬過去。</p>
+      <div class="btnrow">
+        <button type="button" id="exportBtn">匯出設定檔</button>
+        <button type="button" id="importBtn">匯入設定檔</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+        <button type="button" class="danger" id="resetBtn">全部重設</button>
+      </div>
+      <p class="msg" id="dataMsg" role="status"></p>
+      <h3>目前狀態</h3>
+      <ul class="facts" id="facts"></ul>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../common/defaults.js"></script>
+<script src="../content/masker.js"></script>
+<script src="options.js"></script>
+</body>
+</html>

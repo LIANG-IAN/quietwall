@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>靜音牆</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <h1>靜音牆</h1>
+        <p id="siteName">偵測中…</p>
+      </div>
+    </div>
+    <label class="switch" title="總開關">
+      <input type="checkbox" id="masterToggle">
+      <span class="track"><span class="thumb"></span></span>
+    </label>
+  </header>
+
+  <section class="card" id="siteCard">
+    <div class="stat">
+      <strong id="count">0</strong>
+      <span>本頁已屏蔽</span>
+    </div>
+    <label class="row-toggle">
+      <input type="checkbox" id="siteToggle">
+      <span>在這個網站啟用</span>
+    </label>
+  </section>
+
+  <section class="card">
+    <label class="lbl" for="quickInput">快速加入屏蔽關鍵字</label>
+    <form id="quickForm" class="quick">
+      <input type="text" id="quickInput" placeholder="例如：雷、選舉、劇透" autocomplete="off" maxlength="80">
+      <button type="submit">加入</button>
+    </form>
+    <label class="mini-check">
+      <input type="checkbox" id="onlyThisSite">
+      <span>只套用在這個網站</span>
+    </label>
+    <p class="msg" id="quickMsg" role="status"></p>
+  </section>
+
+  <section class="card">
+    <span class="lbl">屏蔽效果</span>
+    <div class="chips" id="effectChips"></div>
+  </section>
+
+  <footer class="bottom">
+    <button type="button" class="ghost" id="revealAll">暫時顯示全部</button>
+    <button type="button" class="ghost" id="openOptions">完整設定</button>
+  </footer>
+
+  <script src="../common/defaults.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

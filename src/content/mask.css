@@ -1,0 +1,126 @@
+/* 靜音牆 QuietWall － 遮罩樣式
+   原則：只用 CSS 選擇器套效果在「被遮元素的子元素」上，不改動網站本身的 DOM 結構，
+   這樣 React 重新渲染時效果不會掉。 */
+
+.pb-rel { position: relative !important; }
+
+/* 被遮狀態：裁掉模糊外溢，避免糊到隔壁貼文 */
+.pb-host:not(.pb-revealed) { overflow: hidden !important; }
+
+/* 被遮狀態：底下內容不可點、不可選取 */
+.pb-host:not(.pb-revealed) > *:not(.pb-ui) {
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* ── 效果 ───────────────────────────────── */
+.pb-host.pb-fx-blur:not(.pb-revealed) > *:not(.pb-ui) {
+  filter: blur(var(--pb-blur, 14px)) !important;
+}
+.pb-host.pb-fx-mosaic:not(.pb-revealed) > *:not(.pb-ui) {
+  filter: url(#pb-pixelate) !important;
+}
+.pb-host.pb-fx-black:not(.pb-revealed) > *:not(.pb-ui) {
+  visibility: hidden !important;
+}
+.pb-host.pb-fx-collapse:not(.pb-revealed) > *:not(.pb-ui) {
+  display: none !important;
+}
+.pb-host.pb-fx-collapse:not(.pb-revealed) {
+  min-height: var(--pb-collapse-h, 44px) !important;
+}
+.pb-host.pb-fx-hide:not(.pb-revealed) {
+  display: none !important;
+}
+
+/* ── 覆蓋層 ─────────────────────────────── */
+.pb-ui {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 2147482000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  padding: 8px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: inherit;
+  overflow: hidden !important;
+  cursor: pointer;
+  background: rgba(8, 10, 14, .10);
+  font: 500 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif !important;
+  color: #fff !important;
+  text-align: center;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  contain: layout paint;
+}
+.pb-ui * { box-sizing: border-box; margin: 0; padding: 0; font: inherit; color: inherit; }
+
+.pb-fx-black > .pb-ui   { background: rgba(0, 0, 0, var(--pb-dark, .96)); }
+.pb-fx-mosaic > .pb-ui  { backdrop-filter: blur(2px); }
+.pb-fx-collapse > .pb-ui{ background: rgba(18, 20, 26, .92); }
+.pb-fx-hide > .pb-ui    { display: none !important; }
+
+/* 提示膠囊 */
+.pb-chip {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  max-width: 94%;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(16, 18, 24, .86);
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pb-dot {
+  width: 8px; height: 8px; flex: 0 0 8px;
+  border-radius: 50%;
+  background: #7aa7ff;
+}
+.pb-label { overflow: hidden; text-overflow: ellipsis; }
+.pb-label b { font-weight: 700; }
+.pb-hint { opacity: .62; font-size: 12px; padding-left: 6px; border-left: 1px solid rgba(255,255,255,.2); }
+
+/* 小尺寸貼文（例如縮圖格）自動縮小提示 */
+.pb-short { display: none; }
+.pb-ui.pb-compact .pb-chip { padding: 4px 9px; font-size: 11.5px !important; gap: 6px; }
+.pb-ui.pb-compact .pb-hint { display: none; }
+.pb-ui.pb-tiny .pb-chip { padding: 3px 7px; font-size: 11px !important; gap: 4px; }
+.pb-ui.pb-tiny .pb-label { display: none; }
+.pb-ui.pb-tiny .pb-short { display: inline; }
+
+/* 已顯示原文：縮成右上角一顆小鈕 */
+.pb-host.pb-revealed > .pb-ui {
+  inset: 6px 6px auto auto !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+.pb-host.pb-revealed .pb-chip {
+  padding: 3px 10px;
+  font-size: 12px !important;
+  opacity: .45;
+  transition: opacity .15s ease;
+}
+.pb-host.pb-revealed .pb-chip:hover { opacity: 1; }
+.pb-host.pb-revealed .pb-hint,
+.pb-host.pb-revealed .pb-short,
+.pb-host.pb-revealed .pb-dot { display: none !important; }
+.pb-host.pb-revealed .pb-label { display: inline !important; }
+
+/* 不可顯示模式：游標不給點擊暗示 */
+.pb-ui.pb-locked { cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-host.pb-revealed .pb-chip { transition: none; }
+}
