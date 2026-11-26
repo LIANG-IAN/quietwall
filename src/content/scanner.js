@@ -47,6 +47,7 @@
     }
 
     function clearTargets(el) {
+      el.__pbPicked = null;
       if (!el.__pbTargets) return;
       for (let i = 0; i < el.__pbTargets.length; i++) PB.Masker.unmask(el.__pbTargets[i]);
       el.__pbTargets = null;
@@ -61,8 +62,12 @@
       try { raw = adapter.text(el) || ''; } catch (e) { return; }
       if (raw.length < 2) return;
 
+      // 「整則貼文」只看文字，文字沒變就不用重算。
+      // 「只遮文字／只遮圖片與影片」要挑出貼文裡的區塊，而圖片影片常常是延遲
+      // 載入的（一開始高度是 0），光看文字判斷不出變化，所以每次都重新挑一次。
       const st = el.__pbState;
-      if (st && st.v === compiled.version && st.len === raw.length) return;
+      const fresh = st && st.v === compiled.version && st.len === raw.length;
+      if (fresh && compiled.scope === 'all') return;
       el.__pbState = { v: compiled.version, len: raw.length };
 
       const rule = PB.evaluate(raw, compiled, adapter.id);
@@ -74,10 +79,19 @@
         try { container = adapter.container(el) || el; } catch (e) { container = el; }
       }
 
-      // 依「遮蔽範圍」決定要蓋住貼文的哪些部分
+      const targets = PB.Masker.pickTargets(container, compiled.scope);
+      if (sameTargets(targets, el.__pbPicked)) return;   // 跟上次一樣就別動它
+
       clearTargets(el);
-      const applied = PB.Masker.maskPost(container, rule, compiled.scope);
+      el.__pbPicked = targets;
+      const applied = PB.Masker.maskPost(container, rule, compiled.scope, targets);
       el.__pbTargets = applied.length ? applied : null;
+    }
+
+    function sameTargets(a, b) {
+      if (!a || !b || a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+      return a.length > 0;
     }
 
     function run(nodes) {

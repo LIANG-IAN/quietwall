@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "靜音牆 QuietWall － 社群關鍵字屏蔽",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "用自訂關鍵字屏蔽社群網站上不想看到的貼文與影片，支援模糊、馬賽克、黑條等效果，點一下即可查看原文。",
   "minimum_chrome_version": "111",
   "permissions": ["storage", "contextMenus", "activeTab"],

@@ -113,6 +113,7 @@
   const MEDIA_TAGS = { IMG: 1, VIDEO: 1, CANVAS: 1, PICTURE: 1, IFRAME: 1 };
 
   let bgCache = null;
+  const BG_BUDGET = 600; // 掃背景圖時最多看幾個節點，避免在超深的版面上拖慢
 
   /** 用 CSS background-image 呈現的圖片也算畫面（漸層不算） */
   function hasBgImage(el) {
@@ -128,24 +129,32 @@
 
   /** 夠大的圖片／影片才算「畫面」，頭像、icon、表情符號不算 */
   function isLargeMedia(el) {
-    if (!MEDIA_TAGS[el.tagName] && !hasBgImage(el)) return false;
-    const r = el.getBoundingClientRect();
-    return r.width >= 100 && r.height >= 70;
+    const r = el.getBoundingClientRect();           // 先量尺寸，比算樣式便宜
+    if (r.width < 100 || r.height < 70) return false;
+    return !!MEDIA_TAGS[el.tagName] || hasBgImage(el);
   }
 
-  function anyLargeMedia(node, depth) {
+  /** 以背景圖呈現的畫面；沒有選擇器查得到，只能走訪，但有節點預算 */
+  function collectBgMedia(node, out, state) {
     const kids = node.children;
     for (let i = 0; i < kids.length; i++) {
+      if (state.n++ > BG_BUDGET) return;
       const el = kids[i];
       if (el.hasAttribute && el.hasAttribute('data-pb-ui')) continue;
-      if (isLargeMedia(el)) return true;
-      if (depth < 4 && el.children.length && anyLargeMedia(el, depth + 1)) return true;
+      if (!MEDIA_TAGS[el.tagName] && isLargeMedia(el)) { out.push(el); continue; }
+      if (el.children.length) collectBgMedia(el, out, state);
     }
-    return false;
   }
 
+  /** 這塊裡面有沒有夠大的畫面（標籤用選擇器找，不受巢狀深度影響） */
   function hasLargeMedia(el) {
-    return isLargeMedia(el) || anyLargeMedia(el, 0);
+    if (isLargeMedia(el)) return true;
+    let list;
+    try { list = el.querySelectorAll(MEDIA_SEL); } catch (e) { list = null; }
+    if (list) for (let i = 0; i < list.length; i++) if (isLargeMedia(list[i])) return true;
+    const bg = [];
+    collectBgMedia(el, bg, { n: 0 });
+    return bg.length > 0;
   }
 
   /** 去掉被其他項目包住的重複項 */
@@ -153,22 +162,36 @@
     return list.filter(el => !list.some(other => other !== el && other.contains(el)));
   }
 
+  /**
+   * 從一張圖片／影片往上爬，找出「整塊都只有畫面、沒有文字」的最外層容器。
+   * 這樣不管網站把圖片包了幾層（Threads 可以包到十幾層）都找得到。
+   */
+  function pureMediaBlock(media, root) {
+    let node = media, parent = media.parentElement;
+    while (parent && parent !== root && root.contains(parent)) {
+      if ((parent.textContent || '').replace(/\s+/g, '').length) break;
+      node = parent;
+      parent = parent.parentElement;
+    }
+    return node;
+  }
+
   function mediaTargets(root) {
-    const out = [];
-    (function walk(node, depth) {
-      const kids = node.children;
-      for (let i = 0; i < kids.length; i++) {
-        const el = kids[i];
-        if (el.hasAttribute && el.hasAttribute('data-pb-ui')) continue;
-        const media = isLargeMedia(el);
-        const text = (el.textContent || '').replace(/\s+/g, '');
-        // 這塊就是畫面、裡面沒有文字 → 整塊遮掉
-        if (media && !text.length) { out.push(el); continue; }
-        if (depth < 6 && el.children.length) walk(el, depth + 1);
-        else if (media) out.push(el);
-      }
-    })(root, 0);
-    return dropNested(out);
+    const found = [];
+    let list;
+    try { list = root.querySelectorAll(MEDIA_SEL); } catch (e) { list = null; }
+    if (list) for (let i = 0; i < list.length; i++) {
+      if (isLargeMedia(list[i])) found.push(list[i]);
+    }
+    collectBgMedia(root, found, { n: 0 });
+    if (!found.length) return [];
+
+    const blocks = [], seen = new Set();
+    for (let i = 0; i < found.length; i++) {
+      const b = pureMediaBlock(found[i], root);
+      if (!seen.has(b)) { seen.add(b); blocks.push(b); }
+    }
+    return dropNested(blocks);
   }
 
   function textTargets(root) {
@@ -180,7 +203,7 @@
         if (el.hasAttribute && el.hasAttribute('data-pb-ui')) continue;
         if (hasLargeMedia(el)) {
           // 這塊裡面有畫面，再往下找純文字的部分
-          if (depth < 6) walk(el, depth + 1);
+          if (depth < 12) walk(el, depth + 1);
           continue;
         }
         if ((el.textContent || '').replace(/\s+/g, '').length >= 1) out.push(el);
@@ -494,8 +517,8 @@
    * 就在貼文容器上另外掛一個只有膠囊的徽章。
    * @returns {Element[]} 實際被遮住的元素
    */
-  function maskPost(container, rule, scope) {
-    const targets = pickTargets(container, scope);
+  function maskPost(container, rule, scope, precomputed) {
+    const targets = precomputed || pickTargets(container, scope);
     if (!targets.length) return [];
 
     let chipOn = null, best = -1;
