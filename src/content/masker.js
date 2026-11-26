@@ -12,7 +12,9 @@
   function buildPixelateFilter(size) {
     const half = Math.max(1, Math.round(size / 2));
     const filter = document.createElementNS(SVG_NS, 'filter');
-    filter.setAttribute('id', 'pb-pixelate');
+    // 每個格子大小用不同的 id：Chrome 不會在 SVG filter 內容改變時重繪
+    // 參照它的元素，換 id 才能強制重新套用。
+    filter.setAttribute('id', 'pb-pixelate-' + size);
     filter.setAttribute('x', '0');
     filter.setAttribute('y', '0');
 
@@ -60,6 +62,25 @@
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     svg.appendChild(buildPixelateFilter(size));
     filterSize = size;
+
+    const root = document.documentElement;
+    root.style.setProperty('--pb-mosaic', 'url(#pb-pixelate-' + size + ')');
+    // 覆蓋層的保底效果：能用 SVG 濾鏡就用，不能就退回等效的模糊
+    root.style.setProperty('--pb-mosaic-soft', supportsBackdropUrl()
+      ? 'url(#pb-pixelate-' + size + ')'
+      : 'blur(' + Math.max(2, Math.round(size * 0.7)) + 'px)');
+  }
+
+  let backdropUrlOk = null;
+  function supportsBackdropUrl() {
+    if (backdropUrlOk === null) {
+      try {
+        backdropUrlOk = !!(g.CSS && CSS.supports &&
+          (CSS.supports('backdrop-filter', 'url(#a)') ||
+           CSS.supports('-webkit-backdrop-filter', 'url(#a)')));
+      } catch (e) { backdropUrlOk = false; }
+    }
+    return backdropUrlOk;
   }
 
   function whenBodyReady(fn) {
@@ -71,7 +92,10 @@
   function setConfig(settings) {
     cfg = settings;
     const root = document.documentElement;
-    root.style.setProperty('--pb-blur', PB.clamp(settings.effect.blur, 2, 40) + 'px');
+    const blur = PB.clamp(settings.effect.blur, 2, 40);
+    root.style.setProperty('--pb-blur', blur + 'px');
+    // 覆蓋層用稍弱的強度，讓兩段式疊加後的結果接近使用者設定的數值
+    root.style.setProperty('--pb-blur-soft', Math.max(2, Math.round(blur * 0.7)) + 'px');
     root.style.setProperty('--pb-dark', String(PB.clamp(settings.effect.darkness, .3, 1)));
     root.style.setProperty('--pb-collapse-h',
       PB.clamp(settings.effect.collapseHeight, 24, 160) + 'px');
@@ -153,16 +177,59 @@
     if (hint) hint.style.display = revealed ? 'none' : '';
   }
 
+  /* ── 影片／音訊 ───────────────────────────────────
+     被遮住的影片如果繼續播放，聲音還是會跑出來，而且使用者為了按暫停
+     就得先點開遮罩、反而看到不想看的內容。所以遮起來的同時就靜音並暫停。 */
+  function eachMedia(host, fn) {
+    let list;
+    try { list = host.querySelectorAll('video, audio'); } catch (e) { return; }
+    for (let i = 0; i < list.length; i++) fn(list[i]);
+  }
+
+  function silence(media) {
+    if (!media.__pbMedia) {
+      media.__pbMedia = { muted: media.muted, autoplay: media.autoplay };
+    }
+    try {
+      media.muted = true;
+      media.autoplay = false;
+      if (!media.paused) media.pause();
+    } catch (e) { /* 某些播放器會擋 */ }
+  }
+
+  function restoreMedia(media) {
+    if (!media.__pbMedia) return;
+    try {
+      media.muted = media.__pbMedia.muted;
+      media.autoplay = media.__pbMedia.autoplay;
+    } catch (e) { /* noop */ }
+    media.__pbMedia = null;
+  }
+
+  function mediaOff(host) { eachMedia(host, silence); }
+  function mediaOn(host) { eachMedia(host, restoreMedia); }
+
+  /* 網站稍後才插入影片、或自己把它叫起來播，都靠這個攔下來。
+     play 事件不會冒泡，但在捕獲階段仍會經過祖先節點。 */
+  function onMediaPlay(e) {
+    const host = e.currentTarget;
+    if (host.classList.contains('pb-revealed')) return;
+    const m = e.target;
+    if (m && typeof m.pause === 'function') silence(m);
+  }
+
   function reveal(host) {
     if (!host.classList.contains('pb-host')) return;
     host.classList.add('pb-revealed');
     setRevealedLabel(host, true);
+    mediaOn(host);
     if (host.__pbUi) host.__pbUi.setAttribute('aria-label', '重新屏蔽這則內容');
   }
 
   function conceal(host) {
     host.classList.remove('pb-revealed');
     setRevealedLabel(host, false);
+    mediaOff(host);
     if (host.__pbUi && host.__pbRule) {
       host.__pbUi.setAttribute('aria-label',
         '這則內容已被屏蔽（命中關鍵字：' + host.__pbRule.label + '），按下以顯示原文');
@@ -217,6 +284,11 @@
       if (host.__pbRule && host.__pbRule.id === rule.id) return false;
       unmask(host);
     }
+    // 外層貼文被遮住時，先清掉裡面已經遮過的區塊，避免疊兩層遮罩
+    let inner;
+    try { inner = host.querySelectorAll('.pb-host'); } catch (e) { inner = []; }
+    for (let i = 0; i < inner.length; i++) unmask(inner[i]);
+
     const fx = (rule.effect && rule.effect !== 'inherit') ? rule.effect : cfg.effect.type;
 
     try {
@@ -233,6 +305,9 @@
     host.__pbUi = ui;
     host.appendChild(ui);
     host.addEventListener('focusin', onFocusIn, true);
+    host.addEventListener('play', onMediaPlay, true);
+    host.addEventListener('playing', onMediaPlay, true);
+    mediaOff(host);
     applyCompact(host, ui);
 
     if (cfg.reveal.trigger === 'hover') {
@@ -251,6 +326,9 @@
     host.classList.remove('pb-host', 'pb-rel', 'pb-revealed');
     if (host.__pbFx) host.classList.remove('pb-fx-' + host.__pbFx);
     host.removeEventListener('focusin', onFocusIn, true);
+    host.removeEventListener('play', onMediaPlay, true);
+    host.removeEventListener('playing', onMediaPlay, true);
+    mediaOn(host);
     if (host.__pbUi) {
       host.__pbUi.removeEventListener('click', onOverlayClick, true);
       host.__pbUi.removeEventListener('keydown', onOverlayKey, true);

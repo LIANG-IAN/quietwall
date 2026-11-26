@@ -78,14 +78,18 @@
       if (!compiled || !compiled.active) return;
       writing = true;
       try {
-        // 由外而內處理，讓外層貼文先被判定，內層留言才不會重複蓋
+        // 由外而內處理，讓外層貼文先被判定，內層留言才不會重複蓋一層。
+        // 用「DOM 深度」排序而不是 compareDocumentPosition：後者對非巢狀的
+        // 兩個元素只能回傳 0，是個不完整的比較器，排序結果會隨陣列長度而變，
+        // 導致內層元素有時會排到外層前面、同一則貼文被遮兩次。
         const list = Array.from(nodes);
-        list.sort((a, b) => {
-          const p = a.compareDocumentPosition(b);
-          if (p & Node.DOCUMENT_POSITION_CONTAINED_BY) return -1;
-          if (p & Node.DOCUMENT_POSITION_CONTAINS) return 1;
-          return 0;
-        });
+        const depth = new Map();
+        for (let i = 0; i < list.length; i++) {
+          let d = 0, p = list[i].parentElement;
+          while (p) { d++; p = p.parentElement; }
+          depth.set(list[i], d);
+        }
+        list.sort((a, b) => depth.get(a) - depth.get(b));
         for (let i = 0; i < list.length; i++) processOne(list[i], compiled);
       } finally {
         writing = false;

@@ -15,11 +15,30 @@
 }
 
 /* ── 效果 ───────────────────────────────── */
+/* 模糊與馬賽克採兩段式：
+   (1) 子元素濾鏡 —— 效果最好，但少數網站（例如 Facebook）會讓它失效；
+   (2) 覆蓋層 backdrop-filter —— 不管網站的 DOM 怎麼長都擋得住。
+   兩者同時生效時會比設定值稍強，但絕不會發生「以為擋住了其實沒擋」。 */
 .pb-host.pb-fx-blur:not(.pb-revealed) > *:not(.pb-ui) {
   filter: blur(var(--pb-blur, 14px)) !important;
 }
+.pb-host.pb-fx-blur:not(.pb-revealed) > .pb-ui {
+  -webkit-backdrop-filter: blur(var(--pb-blur-soft, 10px));
+  backdrop-filter: blur(var(--pb-blur-soft, 10px));
+}
 .pb-host.pb-fx-mosaic:not(.pb-revealed) > *:not(.pb-ui) {
-  filter: url(#pb-pixelate) !important;
+  filter: var(--pb-mosaic, blur(12px)) !important;
+}
+.pb-host.pb-fx-mosaic:not(.pb-revealed) > .pb-ui {
+  -webkit-backdrop-filter: var(--pb-mosaic-soft, blur(7px));
+  backdrop-filter: var(--pb-mosaic-soft, blur(7px));
+}
+/* 瀏覽器不支援 backdrop-filter 時，用不透明底色保底 */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .pb-host.pb-fx-blur:not(.pb-revealed) > .pb-ui,
+  .pb-host.pb-fx-mosaic:not(.pb-revealed) > .pb-ui {
+    background: rgba(16, 18, 24, .97);
+  }
 }
 .pb-host.pb-fx-black:not(.pb-revealed) > *:not(.pb-ui) {
   visibility: hidden !important;
@@ -49,6 +68,9 @@
   border-radius: inherit;
   overflow: hidden !important;
   cursor: pointer;
+  /* pointer-events 會繼承：網站若在外層設成 none，遮罩就會變成點得穿、
+     使用者點到的是底下的貼文連結。這裡必須明確搶回來。 */
+  pointer-events: auto !important;
   background: rgba(8, 10, 14, .10);
   font: 500 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI",
         "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif !important;
@@ -58,10 +80,22 @@
   -webkit-user-select: none !important;
   contain: layout paint;
 }
-.pb-ui * { box-sizing: border-box; margin: 0; padding: 0; font: inherit; color: inherit; }
+.pb-ui * {
+  box-sizing: border-box; margin: 0; padding: 0;
+  font: inherit; color: inherit;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  filter: none !important;
+}
+/* 覆蓋層本身不能被網站的效果或我們自己的效果波及 */
+.pb-host > .pb-ui {
+  filter: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
 
 .pb-fx-black > .pb-ui   { background: rgba(0, 0, 0, var(--pb-dark, .96)); }
-.pb-fx-mosaic > .pb-ui  { backdrop-filter: blur(2px); }
 .pb-fx-collapse > .pb-ui{ background: rgba(18, 20, 26, .92); }
 .pb-fx-hide > .pb-ui    { display: none !important; }
 
