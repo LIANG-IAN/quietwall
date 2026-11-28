@@ -15,6 +15,20 @@
 這些用單元測試看不出來，只有真的跑起來才會現形。上面每一項都是實際發生過、
 修好之後留在 `specs/robustness.test.js` 等檔案裡設防的。
 
+## 跑不到的部分：Firefox
+
+Playwright 無法在 Firefox 載入擴充套件，所以這套測試只跑得了 Chromium。
+`specs/build.test.js` 只能驗到 Firefox 版 manifest 的內容是否正確，
+真正的 Firefox 行為得靠 Mozilla 的 `web-ext lint` 加手動驗證：
+
+```bash
+node tools/build.mjs firefox
+npx web-ext lint --source-dir dist/firefox
+```
+
+接著在 `about:debugging#/runtime/this-firefox` 臨時載入 `dist/firefox/`，
+手動確認遮罩、馬賽克格子大小、影片靜音與授權流程。
+
 ## 怎麼跑
 
 ```bash
@@ -78,6 +92,7 @@ test/
 | `watchpage.test.js` | 自己點進去的影片頁不被遮，推薦區塊照遮 |
 | `robustness.test.js` | 網站與擴充功能互相干擾的各種情況 |
 | `a11y.test.js` | 鍵盤操作與焦點防護 |
+| `build.test.js` | Chrome / Firefox 兩版 manifest 的差異，以及 Firefox 專屬 UI 在 Chrome 上要隱形 |
 
 ## 加新站台時
 

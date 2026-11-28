@@ -20,6 +20,12 @@
     </label>
   </header>
 
+  <!-- Firefox 的 MV3 不會在安裝時給網站授權，缺的時候才顯示 -->
+  <section class="card warn" id="permWarn" hidden>
+    <p>還沒授權網站，靜音牆在這些頁面上不會運作。</p>
+    <button type="button" class="ghost" id="permGo">前往授權</button>
+  </section>
+
   <section class="card" id="siteCard">
     <div class="stat">
       <strong id="count">0</strong>

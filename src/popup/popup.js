@@ -18,7 +18,9 @@
     msg: $('#quickMsg'),
     chips: $('#effectChips'),
     revealAll: $('#revealAll'),
-    openOptions: $('#openOptions')
+    openOptions: $('#openOptions'),
+    permWarn: $('#permWarn'),
+    permGo: $('#permGo')
   };
 
   function activeTab() {
@@ -129,6 +131,15 @@
 
     els.openOptions.addEventListener('click', () => {
       chrome.runtime.openOptionsPage();
+      window.close();
+    });
+
+    // Firefox 的 MV3 不會在安裝時給網站授權；Chrome 這裡永遠是空的
+    PB.missingOrigins().then(miss => { els.permWarn.hidden = !miss.length; });
+    els.permGo.addEventListener('click', () => {
+      // 授權視窗會把 popup 關掉，所以帶到設定頁去按，按完畫面還在
+      const url = chrome.runtime.getURL('src/options/options.html#sites');
+      chrome.tabs.create({ url });
       window.close();
     });
 

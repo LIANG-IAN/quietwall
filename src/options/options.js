@@ -400,6 +400,24 @@
     });
   }
 
+  /* ── 網站授權（Firefox）─────────────────────────
+     Chrome 不會缺權限，renderPerms 查完就把整區藏起來，使用者看不到。 */
+  function renderPerms() {
+    const notice = $('#permNotice');
+    if (!notice) return;
+    PB.missingOrigins().then(miss => {
+      notice.hidden = !miss.length;
+      if (!miss.length) return;
+      const ul = $('#permList');
+      ul.textContent = '';
+      miss.forEach(o => {
+        const li = document.createElement('li');
+        li.textContent = o;
+        ul.appendChild(li);
+      });
+    });
+  }
+
   /* ── 備份面板 ──────────────────────────────── */
   function renderFacts() {
     const ul = $('#facts');
@@ -508,12 +526,27 @@
       settings.enabled = $('#masterToggle').checked;
       save();
     });
+
+    $('#permGrant').addEventListener('click', async () => {
+      const miss = await PB.missingOrigins();
+      if (!miss.length) { renderPerms(); return; }
+      // 必須在使用者點擊的這一輪呼叫，瀏覽器才會跳出授權視窗
+      const ok = await PB.requestOrigins(miss);
+      renderPerms();
+      toast(ok ? '已授權，重新整理網頁就會生效' : '沒有取得授權');
+    });
+
+    if (typeof chrome !== 'undefined' && chrome.permissions && chrome.permissions.onAdded) {
+      chrome.permissions.onAdded.addListener(renderPerms);
+      chrome.permissions.onRemoved.addListener(renderPerms);
+    }
   }
 
   function boot(isReload) {
     $('#masterToggle').checked = settings.enabled;
     render();
     initSites();
+    renderPerms();
     initEffectPanel();
     renderFacts();
     if (!isReload) bindOnce();

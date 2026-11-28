@@ -135,6 +135,15 @@
     <section class="panel" data-panel="sites" hidden>
       <h2>支援網站</h2>
       <p class="sub">可以個別關掉某個網站的屏蔽功能。</p>
+
+      <!-- Firefox 的 MV3 不會在安裝時給網站授權，缺的時候才顯示這一區 -->
+      <div class="notice" id="permNotice" hidden>
+        <strong>還需要你授權網站</strong>
+        <p>這個瀏覽器把網站權限當成選用的，沒授權的網站上靜音牆不會運作。</p>
+        <ul class="facts" id="permList"></ul>
+        <button type="button" id="permGrant">授權這些網站</button>
+      </div>
+
       <div id="siteList" class="list"></div>
     </section>
 

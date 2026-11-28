@@ -1,5 +1,31 @@
 # 更新紀錄
 
+## 0.4.0
+
+### 新增
+
+- **Firefox 版**。`src/` 兩邊完全共用，差異只在 manifest，由 `tools/build.mjs`
+  以 Chrome 的 `manifest.json` 為唯一來源轉出 `dist/chrome/` 與 `dist/firefox/`
+  （各附一個可上架的 zip）。三處差異：
+  - Firefox 不支援 `background.service_worker`，載入時會直接報錯。改成
+    `background.scripts` 事件頁面，共用設定在 manifest 裡排在前面先載；
+    `service-worker.js` 裡的 `import` 換成有條件的 `importScripts`，
+    同一份檔案兩邊都跑得動（Chrome 的 service worker 也從 module 改回 classic）。
+  - 加上 `browser_specific_settings.gecko`：附加元件識別碼、版本底線 Firefox 140
+    （AMO 必填的 `data_collection_permissions` 要到 140 才認得），並聲明不收集任何資料。
+  - 拿掉 Firefox 認不得的 `minimum_chrome_version`。
+
+- **網站授權提示**。Firefox 的 MV3 把 `host_permissions` 全當成選用權限，
+  使用者沒點頭之前連 content script 都不會注入。設定頁的「支援網站」會列出還沒
+  授權的網站並提供授權按鈕，彈出視窗上也有提示。Chrome 查到的永遠是「不缺」，
+  所以這兩塊 UI 在 Chrome 上不會出現。
+
+### 已知限制
+
+- Firefox 版通過了 Mozilla 官方的 `web-ext lint`（0 錯誤、0 警告），但**沒有在真正的
+  Firefox 上跑過**：開發容器裝不了 Firefox，而 Playwright 本身也無法在 Firefox 載入
+  擴充套件，現有的 E2E 測試只跑得了 Chromium。
+
 ## 0.3.1
 
 ### 變更

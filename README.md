@@ -27,6 +27,27 @@ Facebook、Instagram、Threads、X / Twitter、Pornhub、YouTube
 後續階段可再加入 Reddit、Dcard、PTT 等，只需在 `src/content/adapters.js`
 增加一組設定，比對與遮罩邏輯都不必改動。
 
+## 瀏覽器與安裝
+
+Chrome / Edge 等 Chromium 系，以及 Firefox 140 以上。`src/` 兩邊完全共用，
+差異只在 manifest，由打包腳本轉出來：
+
+```bash
+node tools/build.mjs
+```
+
+產出 `dist/chrome/`、`dist/firefox/` 與兩個對應的 zip（只打一邊：`node tools/build.mjs firefox`）。
+
+- **Chrome**：`chrome://extensions` → 開啟開發人員模式 → 載入未封裝項目 → 選 `dist/chrome/`。
+- **Firefox**：`about:debugging#/runtime/this-firefox` → 臨時載入附加元件 → 選 `dist/firefox/manifest.json`。
+  關掉瀏覽器就會消失，要常駐得先送 AMO 簽章。
+
+Firefox 的 MV3 把網站權限當成選用的，安裝後還要到設定頁的「支援網站」按一下授權，
+靜音牆才會在那些網站上動起來；沒授權時彈出視窗會提醒你。Chrome 不需要這一步。
+
+Firefox 版通過了 Mozilla 的 `web-ext lint`，但自動化測試只覆蓋 Chromium
+（Playwright 無法在 Firefox 載入擴充套件），Firefox 上的實際行為還沒驗過。
+
 ## 測試
 
 ```bash

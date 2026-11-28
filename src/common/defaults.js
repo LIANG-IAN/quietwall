@@ -142,6 +142,53 @@
     return s ? s.label : id;
   };
 
+  /* ── 網站授權 ──────────────────────────────
+     Chrome 安裝時就把 host_permissions 給齊了；Firefox 的 MV3 把它們全當成
+     「選用權限」，使用者沒點頭之前連 content script 都不會注入。所以設定頁要
+     能查出缺哪些網站、並在使用者按鈕時當場要權限。
+     Chrome 上這些函式一律回報「沒有缺」，相關 UI 自然不會出現。 */
+
+  /** manifest 宣告的網站樣式，是授權的唯一依據（不會跟 SITES 清單走鐘） */
+  PB.manifestOrigins = function () {
+    try { return (chrome.runtime.getManifest().host_permissions || []).slice(); }
+    catch (e) { return []; }
+  };
+
+  /** 回傳尚未授權的網站樣式陣列；空陣列代表都好了 */
+  PB.missingOrigins = function () {
+    return new Promise(resolve => {
+      const origins = PB.manifestOrigins();
+      if (!origins.length || typeof chrome === 'undefined' || !chrome.permissions) {
+        return resolve([]);
+      }
+      chrome.permissions.contains({ origins }, all => {
+        if (chrome.runtime.lastError || all) return resolve([]);
+        // 全部不通過時再逐站問一次，才知道到底缺哪幾個
+        const miss = [];
+        let left = origins.length;
+        origins.forEach(o => {
+          chrome.permissions.contains({ origins: [o] }, ok => {
+            if (!ok) miss.push(o);
+            if (--left === 0) resolve(miss);
+          });
+        });
+      });
+    });
+  };
+
+  /** 向使用者索取網站授權。必須由點擊等使用者操作觸發，否則瀏覽器會拒絕 */
+  PB.requestOrigins = function (origins) {
+    return new Promise(resolve => {
+      if (typeof chrome === 'undefined' || !chrome.permissions) return resolve(false);
+      try {
+        chrome.permissions.request({ origins }, granted => {
+          void chrome.runtime.lastError;
+          resolve(!!granted);
+        });
+      } catch (e) { resolve(false); }
+    });
+  };
+
   PB.loadSettings = function () {
     return new Promise(resolve => {
       try {

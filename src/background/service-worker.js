@@ -1,5 +1,12 @@
-/* 背景服務：徽章計數、右鍵選單、初始化 */
-import '../common/defaults.js';
+/* 背景服務：徽章計數、右鍵選單、初始化
+
+   兩種瀏覽器的背景環境不同，這裡用同一份程式碼應付：
+   - Chrome 走 MV3 service worker，共用設定要自己 importScripts 進來；
+   - Firefox 不支援 background.service_worker，走 background.scripts 事件頁面，
+     defaults.js 已經在 manifest 裡排在前面載好了，這裡不必（也不能）再載。 */
+if (!globalThis.PB && typeof importScripts === 'function') {
+  importScripts('../common/defaults.js');
+}
 
 const PB = globalThis.PB;
 const BADGE_BG = '#4b5563';

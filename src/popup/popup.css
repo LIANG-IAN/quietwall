@@ -99,3 +99,8 @@ p  { margin: 0; }
   background: transparent; color: var(--fg); font: inherit; font-size: 12.5px; cursor: pointer;
 }
 .ghost:hover { background: var(--card); }
+
+/* ── 網站授權提示（只有 Firefox 會缺權限）── */
+[hidden] { display: none !important; }
+.card.warn { border-color: var(--accent); }
+.card.warn p { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }

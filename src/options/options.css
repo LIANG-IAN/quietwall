@@ -182,3 +182,12 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   font-size: 13.5px; opacity: 0; pointer-events: none; transition: all .2s ease; z-index: 99;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ── 網站授權提示（只有 Firefox 會缺權限，Chrome 上這塊不會出現）── */
+.notice {
+  background: var(--panel); border: 1px solid var(--accent);
+  border-radius: var(--radius); padding: 12px 14px; margin: 0 0 16px;
+}
+.notice strong { display: block; margin-bottom: 4px; }
+.notice p { margin: 0 0 8px; color: var(--muted); font-size: 13.5px; }
+.notice .facts { margin: 0 0 10px; }
